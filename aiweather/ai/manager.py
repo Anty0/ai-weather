@@ -1,0 +1,131 @@
+"""AI manager for orchestrating multiple AI models with progressive updates."""
+
+import asyncio
+import json
+from pathlib import Path
+from typing import Callable, Dict, Optional, Any, Awaitable
+
+import structlog
+
+from .normalizer import HtmlNormalizer
+from ..config import Settings, AIModelConfig
+from .base import AIProvider
+from .ollama import OllamaProvider
+
+ERROR_TEMPLATE_PATH = Path(__file__).parent.parent.parent / "static" / "templates" / "error.html"
+
+logger: structlog.stdlib.BoundLogger = structlog.get_logger()
+
+
+class AIManager:
+    """Orchestrates AI model requests with progressive updates."""
+
+    def __init__(self, settings: Settings) -> None:
+        """Initialize AI manager.
+
+        Args:
+            settings: Application settings
+        """
+        self.settings = settings
+        self.normalizer = HtmlNormalizer()
+        self.providers: Dict[str, AIProvider] = {}
+        self._error_template = ERROR_TEMPLATE_PATH.read_text()
+
+        # Initialize Ollama provider
+        self.providers["ollama"] = OllamaProvider(settings.ollama)
+
+    async def generate_all(
+        self,
+        weather_json: str,
+        on_complete: Optional[Callable[[str, str], Awaitable[Any]]] = None,
+    ) -> Dict[str, str]:
+        """Generate HTML from all enabled AI models with progressive callbacks.
+
+        Args:
+            weather_json: Raw JSON string of weather data from API
+            on_complete: Optional callback called when each model completes.
+                        Signature: async def callback(model_name: str, html: str)
+
+        Returns:
+            Dictionary mapping model names to generated HTML
+        """
+        # Prepare prompt with pretty-printed JSON
+        try:
+            weather_obj = json.loads(weather_json)
+            weather_json_formatted = json.dumps(weather_obj, indent=2)
+        except json.JSONDecodeError:
+            logger.warning("json_parse_failed", using_raw=True)
+            weather_json_formatted = weather_json
+
+        prompt = self.settings.prompt.template.format(weather_json=weather_json_formatted)
+
+        async def generate_with_callback(model_name: str, model_config: AIModelConfig) -> tuple[str, str]:
+            """Generate and call callback when done.
+
+            Args:
+                model_name: Name of the model
+                model_config: Model configuration
+
+            Returns:
+                Tuple of (model_name, html)
+            """
+            try:
+                # Type check to ensure model_config has the right attributes
+                if not hasattr(model_config, "provider"):
+                    raise AttributeError("model_config missing provider attribute")
+
+                provider = self.providers.get(model_config.provider)
+                if not provider:
+                    raise Exception(f"Provider {model_config.provider} not found")
+
+                html = await asyncio.wait_for(
+                    provider.generate_html(
+                        prompt=prompt,
+                        model_id=model_config.model_id,
+                        temperature=model_config.temperature,
+                    ),
+                    timeout=model_config.timeout,
+                )
+
+                # Clean up the AI output
+                html = self.normalizer.normalize(html)
+
+                # Call callback immediately when this model completes
+                if on_complete:
+                    await on_complete(model_name, html)
+
+                return model_name, html
+
+            except Exception as e:
+                logger.error("model_failed", model=model_name, error=str(e))
+                html = self._error_html(model_name, str(e))
+
+                # Call callback even for errors
+                if on_complete:
+                    await on_complete(model_name, html)
+
+                return model_name, html
+
+        # Execute all in parallel
+        tasks = [
+            generate_with_callback(model_config.name, model_config)
+            for model_config in self.settings.ai_models
+            if model_config.enabled
+        ]
+
+        results = await asyncio.gather(*tasks)
+
+        # Return as dict
+        return dict(results)
+
+    def _error_html(self, model_name: str, error: str) -> str:
+        """Generate error HTML for failed generations.
+
+        Args:
+            model_name: Name of the model that failed
+            error: Error message
+
+        Returns:
+            HTML error page
+        """
+        return self._error_template.format(model_name=model_name, error=error)

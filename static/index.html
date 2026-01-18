@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Weather - Not in the way you think</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>AI Weather</h1>
+            <p class="subtitle">Not in the way you think</p>
+        </div>
+        <div id="timestamp" class="timestamp">
+            <div class="timestamp-time"></div>
+            <div class="timestamp-date"></div>
+        </div>
+        <div class="controls">
+            <span id="status" class="status connecting">Connecting...</span>
+            <button id="info-btn" class="btn">About</button>
+        </div>
+    </header>
+
+    <main id="grid-container" class="grid">
+        <!-- Dynamically populated with model visualizations -->
+    </main>
+
+    <dialog id="info-dialog">
+        <div class="dialog-content">
+            <h2>About AI Weather</h2>
+            <p>
+                This website asks various AI models to create HTML/CSS visualizations of current weather data, every hour.
+                The results are displayed in real-time on a web page.
+            </p>
+
+            <h3>Prompt</h3>
+            <pre id="prompt-display" class="code-block"></pre>
+
+            <h3>Weather Data</h3>
+            <details>
+                <summary>Current weather JSON (click to expand)</summary>
+                <pre id="weather-display" class="code-block"></pre>
+            </details>
+
+            <h3>Active Models</h3>
+            <ul id="models-list" class="models-list"></ul>
+
+            <h3>Attributions</h3>
+            <p class="attribution">
+                Inspired by <a href="https://clocks.brianmoore.com/" target="_blank" rel="noopener noreferrer">clocks.brianmoore.com</a>
+            </p>
+            <p class="attribution">
+                Weather data provided by <a href="https://openweathermap.org/" target="_blank" rel="noopener noreferrer">OpenWeather API</a>
+            </p>
+
+            <button id="close-dialog" class="btn btn-primary">Close</button>
+        </div>
+    </dialog>
+
+    <dialog id="expand-dialog">
+        <div class="expand-dialog-content">
+            <div class="expand-dialog-header">
+                <span class="expand-dialog-title"></span>
+                <button class="expand-close-btn" aria-label="Close">&times;</button>
+            </div>
+            <iframe class="expand-iframe"></iframe>
+        </div>
+    </dialog>
+
+    <script src="/static/js/websocket.js"></script>
+    <script src="/static/js/grid.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# AI Weather Configuration
+# Copy this file to config.yaml and customize
+
+weather:
+  api_key: "my_api_key"             # One Call API 3.0 key - see https://openweathermap.org/api/one-call-3
+  lat: 37.7749                      # San Francisco latitude
+  lon: -122.4194                    # San Francisco longitude
+  units: metric                     # metric, imperial, or standard
+  timeout: 30
+
+ai_models:
+  - name: "Llama 3.2"
+    provider: ollama
+    model_id: llama3.2
+    temperature: 0.8
+    timeout: 120
+    enabled: true
+
+  - name: "Qwen3"
+    provider: ollama
+    model_id: qwen3
+    temperature: 0.7
+    timeout: 120
+    enabled: true
+
+  - name: "Mistral"
+    provider: ollama
+    model_id: mistral
+    temperature: 0.9
+    timeout: 120
+    enabled: true
+
+ollama:
+  base_url: http://localhost:11434
+  timeout: 120
+
+prompt:
+  template: |
+    You are a creative web developer. Create a self-contained static HTML page that visually represents the current weather data.
+
+    Weather Data:
+    {weather_json}
+
+    Requirements:
+    - Single HTML file with inline CSS
+    - DON'T use text to convey weather ONLY using visuals
+    - Creative and visually interesting representation of the weather
+    - Use colors, shapes, animations to represent temperature, conditions, etc.
+    - Be creative!
+    - Must be valid HTML5
+    - Mobile-friendly
+    - No external dependencies (no CDN, no external images)
+    - Hardcode the weather data in the HTML
+
+    Return ONLY the HTML code, no explanations.
+
+scheduler:
+  timezone: UTC
+  refresh_minute: 0  # Refresh at minute 0 of every hour
+
+storage:
+  data_dir: data
