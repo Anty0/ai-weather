@@ -1,6 +1,8 @@
 # AI Weather _(Not in the way you think)_
 
-AI-powered weather visualizations – aka when AI meets HTML visualization. See it in action at [https://ai-weather.codetopic.eu](https://ai-weather.codetopic.eu)! ^^
+AI-powered weather visualizations – aka when AI meets HTML visualization.
+
+See it in action at [https://ai-weather.codetopic.eu](https://ai-weather.codetopic.eu)! ^^
 
 ## How did this come to exist?
 
@@ -213,13 +215,16 @@ All generated visualizations are saved to the `data/` directory:
 
 ```
 data/
-  2025-11-28-14/
-    weather.json          # OpenWeather API response
-    metadata.json         # Timestamp + models
-    Llama_2_7B.html       # Generated HTML
-    CodeLlama.html
-    Mistral.html
-  2025-11-28-15/
+  2025-11/
+    28-14/
+      weather.json          # OpenWeather API response
+      metadata.json         # Timestamp + models
+      Llama_2_7B.html       # Generated HTML
+      CodeLlama.html
+      Mistral.html
+    28-15/
+      ...
+  2025-12/
     ...
 ```
 
