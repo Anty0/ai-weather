@@ -65,8 +65,8 @@ class StateService:
             timestamp: ISO format timestamp string
         """
         self.current_timestamp = timestamp
-        self.current_weather = None
-        self.current_visualizations.clear()
+        # self.current_weather = None
+        # self.current_visualizations.clear()
 
     def update_weather(self, weather: Dict[str, Any]) -> None:
         """Update current weather data.

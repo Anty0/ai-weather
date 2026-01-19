@@ -92,19 +92,22 @@ class WeatherScheduler:
         self.state_service.update_weather(weather_dict)
         await self.ws_manager.broadcast_weather()
 
-        # Broadcast visualizations, so clients realize we're generating new ones
-        for model_name in models:
-            await self.ws_manager.broadcast_visualization(model_name)
+        # # Broadcast visualizations, so clients realize we're generating new ones
+        # for model_name in models:
+        #     await self.ws_manager.broadcast_visualization(model_name)
 
         # Define callback for progressive updates
-        async def on_visualization_complete(model_name: str, html: str) -> None:
+        async def on_visualization_update(model_name: str, html: str) -> None:
             """Called when each model completes."""
             await self.archive.save_visualization(timestamp, model_name, html)
             self.state_service.update_visualization(model_name, html)
             await self.ws_manager.broadcast_visualization(model_name)
 
-        # Generate visualizations with progressive updates
-        visualizations = await self.ai_manager.generate_all(weather_json, on_complete=on_visualization_complete)
+        # Generate visualizations with streaming updates
+        visualizations = await self.ai_manager.generate_all(
+            weather_json,
+            on_update=on_visualization_update,
+        )
 
         logger.info("refresh_complete", models=len(visualizations))
 

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, Optional, Any, Awaitable
 
@@ -37,13 +38,13 @@ class AIManager:
     async def generate_all(
         self,
         weather_json: str,
-        on_complete: Optional[Callable[[str, str], Awaitable[Any]]] = None,
+        on_update: Optional[Callable[[str, str], Awaitable[Any]]] = None,
     ) -> Dict[str, str]:
         """Generate HTML from all enabled AI models with progressive callbacks.
 
         Args:
             weather_json: Raw JSON string of weather data from API
-            on_complete: Optional callback called when each model completes.
+            on_update: Optional callback called when each model updates its output.
                         Signature: async def callback(model_name: str, html: str)
 
         Returns:
@@ -78,10 +79,21 @@ class AIManager:
                 if not provider:
                     raise Exception(f"Provider {model_config.provider} not found")
 
+                last_update = datetime.now()
+
+                # Create a model-specific chunk callback
+                async def model_chunk_callback(accumulated_html: str) -> None:
+                    nonlocal last_update
+                    if on_update:
+                        if (datetime.now() - last_update).seconds >= 5:
+                            last_update = datetime.now()
+                            await on_update(model_name, accumulated_html)
+
                 html = await asyncio.wait_for(
                     provider.generate_html(
                         prompt=prompt,
                         model_id=model_config.model_id,
+                        on_chunk=model_chunk_callback if on_update else None,
                         temperature=model_config.temperature,
                     ),
                     timeout=model_config.timeout,
@@ -91,8 +103,8 @@ class AIManager:
                 html = self.normalizer.normalize(html)
 
                 # Call callback immediately when this model completes
-                if on_complete:
-                    await on_complete(model_name, html)
+                if on_update:
+                    await on_update(model_name, html)
 
                 return model_name, html
 
@@ -101,8 +113,8 @@ class AIManager:
                 html = self._error_html(model_name, str(e))
 
                 # Call callback even for errors
-                if on_complete:
-                    await on_complete(model_name, html)
+                if on_update:
+                    await on_update(model_name, html)
 
                 return model_name, html
 

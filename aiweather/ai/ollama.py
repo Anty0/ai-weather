@@ -1,5 +1,7 @@
 """Ollama AI provider implementation."""
 
+from collections.abc import Awaitable, Callable
+
 import ollama
 import structlog
 
@@ -22,12 +24,19 @@ class OllamaProvider(AIProvider):
         self.client = ollama.AsyncClient(host=config.base_url, timeout=config.timeout)
         logger.info("ollama_initialized", base_url=config.base_url, timeout=config.timeout)
 
-    async def generate_html(self, prompt: str, model_id: str, **kwargs: object) -> str:
-        """Generate HTML using an Ollama model.
+    async def generate_html(
+        self,
+        prompt: str,
+        model_id: str,
+        on_chunk: Callable[[str], Awaitable[None]] | None = None,
+        **kwargs: object,
+    ) -> str:
+        """Generate HTML using an Ollama model with streaming support.
 
         Args:
             prompt: The prompt to send to the model
             model_id: Ollama model identifier
+            on_chunk: Optional callback invoked with accumulated HTML as chunks arrive
             **kwargs: Additional arguments (temperature, etc.)
 
         Returns:
@@ -41,11 +50,20 @@ class OllamaProvider(AIProvider):
                 model=model_id,
                 prompt=prompt,
                 options={"temperature": kwargs.get("temperature", 0.7)},
+                stream=True,
+                keep_alive="2h",
             )
 
-            html: str = response["response"]
-            logger.info("html_generated", model=model_id, length=len(html))
-            return html
+            accumulated = ""
+            async for chunk in response:
+                text = chunk.get("response", "")
+                if text:
+                    accumulated += text
+                    if on_chunk:
+                        await on_chunk(accumulated)
+
+            logger.info("html_generated", model=model_id, length=len(accumulated))
+            return accumulated
 
         except Exception as e:
             logger.error("html_generation_failed", model=model_id, error=str(e))
