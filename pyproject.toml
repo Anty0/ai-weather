@@ -1,6 +1,6 @@
 [project]
 name = "ai-weather"
-version = "1.1.0"
+version = "1.2.0"
 description = "AI Weather - Not in the way you think"
 readme = "README.md"
 requires-python = ">=3.14"
