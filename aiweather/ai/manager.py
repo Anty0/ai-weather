@@ -8,7 +8,6 @@ from typing import Callable, Dict, Optional, Any, Awaitable
 
 import structlog
 
-from .normalizer import HtmlNormalizer
 from ..config import Settings, AIModelConfig
 from .base import AIProvider
 from .ollama import OllamaProvider
@@ -28,7 +27,6 @@ class AIManager:
             settings: Application settings
         """
         self.settings = settings
-        self.normalizer = HtmlNormalizer()
         self.providers: Dict[str, AIProvider] = {}
         self._error_template = ERROR_TEMPLATE_PATH.read_text()
 
@@ -98,9 +96,6 @@ class AIManager:
                     ),
                     timeout=model_config.timeout,
                 )
-
-                # Clean up the AI output
-                html = self.normalizer.normalize(html)
 
                 # Call callback immediately when this model completes
                 if on_update:

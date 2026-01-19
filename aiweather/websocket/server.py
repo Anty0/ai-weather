@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import structlog
 from fastapi import WebSocket, WebSocketDisconnect
 
+from ..ai.normalizer import HtmlNormalizer
 from ..config import Settings
 from ..state import StateService
 
@@ -21,6 +22,7 @@ class ConnectionManager:
         """
         self.settings = settings
         self.state_service = state_service
+        self.normalizer = HtmlNormalizer()
         self.active_connections: List[WebSocket] = []
 
     async def handle(self, websocket: WebSocket) -> None:
@@ -140,8 +142,14 @@ class ConnectionManager:
         }
 
     def make_visualization_message(self, model_name: str) -> Optional[Dict[str, Any]]:
+        html = self.state_service.current_visualizations.get(model_name)
+
+        # Clean up the AI output
+        if html is not None:
+            html = self.normalizer.normalize(html)
+
         return {
             "type": "visualization_update",
             "model_name": model_name,
-            "html": self.state_service.current_visualizations.get(model_name),
+            "html": html,
         }
