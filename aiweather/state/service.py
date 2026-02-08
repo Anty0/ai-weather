@@ -31,6 +31,7 @@ class StateService:
         self.current_weather: Optional[Dict[str, Any]] = None
         self.current_visualizations: Dict[str, str] = {}
         self.current_timestamp: Optional[str] = None
+        self.visualization_status: Dict[str, str] = {}
 
     async def load_from_archive(self) -> bool:
         """Load the latest data from the archive into state.
@@ -49,6 +50,7 @@ class StateService:
         self.current_timestamp = latest["timestamp"]
         self.current_weather = latest.get("weather")
         self.current_visualizations = latest.get("visualizations", {})
+        self.visualization_status = {name: "up_to_date" for name in self.current_visualizations}
 
         logger.info(
             "state_loaded_from_archive",
@@ -65,8 +67,6 @@ class StateService:
             timestamp: ISO format timestamp string
         """
         self.current_timestamp = timestamp
-        # self.current_weather = None
-        # self.current_visualizations.clear()
 
     def update_weather(self, weather: Dict[str, Any]) -> None:
         """Update current weather data.
@@ -86,3 +86,16 @@ class StateService:
         """
         self.current_visualizations[model_name] = html
         logger.debug("state_viz_updated", model=model_name)
+
+    def mark_all_outdated(self) -> None:
+        """Mark all visualizations as outdated."""
+        for name in self.visualization_status:
+            self.visualization_status[name] = "outdated"
+
+    def mark_generating(self, model_name: str) -> None:
+        """Mark a visualization as currently generating."""
+        self.visualization_status[model_name] = "generating"
+
+    def mark_up_to_date(self, model_name: str) -> None:
+        """Mark a visualization as up to date."""
+        self.visualization_status[model_name] = "up_to_date"

@@ -149,9 +149,12 @@ class ConnectionManager:
         if raw_html is not None:
             html = self.normalizer.normalize(raw_html)
 
+        status = self.state_service.visualization_status.get(model_name, "up_to_date")
+
         return {
             "type": "visualization_update",
             "model_name": model_name,
             "html": html,
             "raw_html": raw_html,
+            "status": status,
         }

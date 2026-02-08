@@ -170,6 +170,46 @@ header {
     color: var(--text-color);
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.status-indicator {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1;
+}
+
+.status-indicator.generating {
+    display: inline-flex;
+}
+
+.status-indicator.generating::after {
+    content: '';
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: status-spin 0.8s linear infinite;
+}
+
+@keyframes status-spin {
+    to { transform: rotate(360deg); }
+}
+
+.status-indicator.outdated {
+    display: inline-flex;
+    color: var(--warning-color);
+    cursor: help;
+}
+
 .expand-btn {
     background: transparent;
     border: none;

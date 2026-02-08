@@ -36,14 +36,14 @@ class AIManager:
     async def generate_all(
         self,
         weather_json: str,
-        on_update: Optional[Callable[[str, str], Awaitable[Any]]] = None,
+        on_update: Optional[Callable[[str, str, bool], Awaitable[Any]]] = None,
     ) -> Dict[str, str]:
         """Generate HTML from all enabled AI models with progressive callbacks.
 
         Args:
             weather_json: Raw JSON string of weather data from API
             on_update: Optional callback called when each model updates its output.
-                        Signature: async def callback(model_name: str, html: str)
+                        Signature: async def callback(model_name: str, html: str, is_complete: bool)
 
         Returns:
             Dictionary mapping model names to generated HTML
@@ -85,7 +85,7 @@ class AIManager:
                     if on_update:
                         if (datetime.now() - last_update).seconds >= 5:
                             last_update = datetime.now()
-                            await on_update(model_name, accumulated_html)
+                            await on_update(model_name, accumulated_html, False)
 
                 html = await asyncio.wait_for(
                     provider.generate_html(
@@ -99,7 +99,7 @@ class AIManager:
 
                 # Call callback immediately when this model completes
                 if on_update:
-                    await on_update(model_name, html)
+                    await on_update(model_name, html, True)
 
                 return model_name, html
 
@@ -109,7 +109,7 @@ class AIManager:
 
                 # Call callback even for errors
                 if on_update:
-                    await on_update(model_name, html)
+                    await on_update(model_name, html, True)
 
                 return model_name, html
 

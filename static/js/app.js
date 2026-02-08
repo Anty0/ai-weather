@@ -34,11 +34,12 @@ ws.on('weather_data', (data) => {
     currentWeather = data.weather;
     weatherDisplay.textContent = JSON.stringify(data.weather, null, 2);
     updateTimestamp(data.timestamp);
+    grid.markAllOutdated();
 });
 
 ws.on('visualization_update', (data) => {
-    grid.updateVisualization(data.model_name, data.html, data.raw_html);
-    console.log('Visualization updated for', data.model_name);
+    grid.updateVisualization(data.model_name, data.html, data.raw_html, data.status);
+    console.log('Visualization updated for', data.model_name, 'status:', data.status);
 });
 
 ws.on('error', (error) => {

@@ -4,6 +4,7 @@ class GridManager {
         this.items = new Map();
         this.rawHtmlMap = new Map();
         this.normalizedHtmlMap = new Map();
+        this.statusMap = new Map();
     }
 
     setModels(models) {
@@ -14,6 +15,7 @@ class GridManager {
         this.items.clear();
         this.rawHtmlMap.clear();
         this.normalizedHtmlMap.clear();
+        this.statusMap.clear();
 
         for (const modelName of models) {
             const item = this.createGridItem(modelName, null);
@@ -22,7 +24,7 @@ class GridManager {
         }
     }
 
-    updateVisualization(modelName, html, rawHtml) {
+    updateVisualization(modelName, html, rawHtml, status) {
         /**
          * Update a specific model's visualization
          */
@@ -39,6 +41,43 @@ class GridManager {
             this.rawHtmlMap.set(modelName, rawHtml);
         }
         this.normalizedHtmlMap.set(modelName, html);
+        if (status) {
+            this.updateStatus(modelName, status);
+        }
+    }
+
+    updateStatus(modelName, status) {
+        /**
+         * Update the status indicator for a model
+         */
+        if (!this.items.has(modelName)) return;
+        this.statusMap.set(modelName, status);
+
+        const item = this.items.get(modelName);
+        const indicator = item.querySelector('.status-indicator');
+        if (!indicator) return;
+
+        indicator.className = 'status-indicator';
+        indicator.removeAttribute('title');
+
+        if (status === 'generating') {
+            indicator.className = 'status-indicator generating';
+        } else if (status === 'outdated') {
+            indicator.className = 'status-indicator outdated';
+            indicator.textContent = '\u26A0';
+            indicator.setAttribute('title', 'Visualization is outdated \u2014 generated from previous weather data');
+            return;
+        }
+        indicator.textContent = '';
+    }
+
+    markAllOutdated() {
+        /**
+         * Mark all models as outdated
+         */
+        for (const modelName of this.items.keys()) {
+            this.updateStatus(modelName, 'outdated');
+        }
     }
 
     createGridItem(modelName, html) {
@@ -53,14 +92,23 @@ class GridManager {
         title.className = 'grid-item-title';
         title.textContent = modelName;
 
+        const actions = document.createElement('span');
+        actions.className = 'header-actions';
+
+        const statusIndicator = document.createElement('span');
+        statusIndicator.className = 'status-indicator';
+
         const expandBtn = document.createElement('button');
         expandBtn.className = 'expand-btn';
         expandBtn.setAttribute('aria-label', `Expand ${modelName} visualization`);
         expandBtn.setAttribute('title', 'Expand');
         expandBtn.textContent = '\u26F6';
 
+        actions.appendChild(statusIndicator);
+        actions.appendChild(expandBtn);
+
         header.appendChild(title);
-        header.appendChild(expandBtn);
+        header.appendChild(actions);
 
         const iframe = document.createElement('iframe');
         iframe.srcdoc = html || this.getLoadingPlaceholderHtml();

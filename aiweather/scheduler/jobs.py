@@ -90,17 +90,21 @@ class WeatherScheduler:
         weather_dict = json.loads(weather_json)
         self.state_service.update_timestamp(timestamp.isoformat())
         self.state_service.update_weather(weather_dict)
+        self.state_service.mark_all_outdated()
         await self.ws_manager.broadcast_weather()
 
-        # # Broadcast visualizations, so clients realize we're generating new ones
-        # for model_name in models:
-        #     await self.ws_manager.broadcast_visualization(model_name)
+        for model_name in models:
+            await self.ws_manager.broadcast_visualization(model_name)
 
         # Define callback for progressive updates
-        async def on_visualization_update(model_name: str, html: str) -> None:
-            """Called when each model completes."""
+        async def on_visualization_update(model_name: str, html: str, is_complete: bool) -> None:
+            """Called on each progressive update and on completion."""
             await self.archive.save_visualization(timestamp, model_name, html)
             self.state_service.update_visualization(model_name, html)
+            if is_complete:
+                self.state_service.mark_up_to_date(model_name)
+            else:
+                self.state_service.mark_generating(model_name)
             await self.ws_manager.broadcast_visualization(model_name)
 
         # Generate visualizations with streaming updates
