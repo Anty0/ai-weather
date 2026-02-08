@@ -11,6 +11,36 @@ const promptDisplay = document.getElementById('prompt-display');
 const weatherDisplay = document.getElementById('weather-display');
 const modelsList = document.getElementById('models-list');
 
+// Theme management
+const THEME_KEY = 'theme-preference';
+const THEME_CYCLE = ['auto', 'light', 'dark'];
+const THEME_ICONS = { auto: '\u25D0', light: '\u2600\uFE0F', dark: '\u263D' };
+const THEME_LABELS = { auto: 'Auto', light: 'Light', dark: 'Dark' };
+const themeToggle = document.getElementById('theme-toggle');
+
+function getStoredTheme() {
+    return localStorage.getItem(THEME_KEY) || 'auto';
+}
+
+function applyTheme(theme) {
+    if (theme === 'light' || theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', theme);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    themeToggle.textContent = THEME_ICONS[theme];
+    themeToggle.title = `Theme: ${THEME_LABELS[theme]}`;
+}
+
+themeToggle.addEventListener('click', () => {
+    const current = getStoredTheme();
+    const next = THEME_CYCLE[(THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length];
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+});
+
+applyTheme(getStoredTheme());
+
 // Current state
 let currentConfig = null;
 let currentWeather = null;

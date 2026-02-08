@@ -6,6 +6,12 @@
     <title>AI Weather - Not in the way you think</title>
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
+    <script>
+        (function() {
+            var t = localStorage.getItem('theme-preference');
+            if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
 </head>
 <body>
     <header>
@@ -19,6 +25,7 @@
         </div>
         <div class="controls">
             <span id="status" class="status connecting">Connecting...</span>
+            <button id="theme-toggle" class="btn theme-btn" title="Theme: Auto" aria-label="Toggle theme">&#x25D0;</button>
             <button id="info-btn" class="btn">About</button>
         </div>
     </header>

@@ -10,6 +10,55 @@
     --bg-color: #f8f9fa;
     --card-bg: #ffffff;
     --border-color: #e0e0e0;
+    --card-header-gradient-start: #f5f7fa;
+    --card-header-gradient-end: #c3cfe2;
+    --code-block-bg: #f5f5f5;
+    --surface-color: #f8f9fa;
+    --surface-hover-color: #e9ecef;
+    --text-muted: #555;
+    --text-dim: #666;
+    --dialog-bg: #ffffff;
+    --hover-overlay: rgba(0, 0, 0, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.07);
+    --shadow-color-hover: rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --text-color: #e1e4e8;
+        --bg-color: #1a1b1e;
+        --card-bg: #2d2d30;
+        --border-color: #404040;
+        --card-header-gradient-start: #2d2d30;
+        --card-header-gradient-end: #3a3a3d;
+        --code-block-bg: #2d2d30;
+        --surface-color: #2d2d30;
+        --surface-hover-color: #3a3a3d;
+        --text-muted: #b0b3b8;
+        --text-dim: #8b949e;
+        --dialog-bg: #2d2d30;
+        --hover-overlay: rgba(255, 255, 255, 0.08);
+        --shadow-color: rgba(0, 0, 0, 0.2);
+        --shadow-color-hover: rgba(0, 0, 0, 0.35);
+    }
+}
+
+[data-theme="dark"] {
+    --text-color: #e1e4e8;
+    --bg-color: #1a1b1e;
+    --card-bg: #2d2d30;
+    --border-color: #404040;
+    --card-header-gradient-start: #2d2d30;
+    --card-header-gradient-end: #3a3a3d;
+    --code-block-bg: #2d2d30;
+    --surface-color: #2d2d30;
+    --surface-hover-color: #3a3a3d;
+    --text-muted: #b0b3b8;
+    --text-dim: #8b949e;
+    --dialog-bg: #2d2d30;
+    --hover-overlay: rgba(255, 255, 255, 0.08);
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --shadow-color-hover: rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -146,18 +195,18 @@ header {
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    box-shadow: 0 4px 6px var(--shadow-color);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .grid-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 8px 12px var(--shadow-color-hover);
 }
 
 .grid-item-header {
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, var(--card-header-gradient-start) 0%, var(--card-header-gradient-end) 100%);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
@@ -225,7 +274,7 @@ header {
 
 .expand-btn:hover {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--hover-overlay);
 }
 
 .expand-btn:focus-visible {
@@ -237,7 +286,7 @@ header {
     flex: 1;
     border: none;
     width: 100%;
-    background: white;
+    background: var(--card-bg);
 }
 
 dialog {
@@ -248,6 +297,8 @@ dialog {
     border-radius: 12px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     padding: 0;
+    background: var(--dialog-bg);
+    color: var(--text-color);
 }
 
 dialog::backdrop {
@@ -277,11 +328,11 @@ dialog::backdrop {
 .dialog-content p {
     line-height: 1.7;
     margin-bottom: 1rem;
-    color: #555;
+    color: var(--text-muted);
 }
 
 .code-block {
-    background: #f5f5f5;
+    background: var(--code-block-bg);
     padding: 1.25rem;
     border-radius: 6px;
     overflow-x: auto;
@@ -301,13 +352,13 @@ dialog::backdrop {
 .models-list li {
     padding: 0.5rem 1rem;
     margin-bottom: 0.5rem;
-    background: #f8f9fa;
+    background: var(--surface-color);
     border-radius: 6px;
     border-left: 3px solid var(--primary-color);
 }
 
 .attribution {
-    color: #666;
+    color: var(--text-dim);
     font-size: 0.875rem;
     margin: 0.5rem 0;
 }
@@ -329,14 +380,14 @@ details {
 summary {
     cursor: pointer;
     padding: 0.75rem;
-    background: #f8f9fa;
+    background: var(--surface-color);
     border-radius: 6px;
     font-weight: 600;
     user-select: none;
 }
 
 summary:hover {
-    background: #e9ecef;
+    background: var(--surface-hover-color);
 }
 
 #close-dialog {
@@ -373,7 +424,7 @@ summary:hover {
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: linear-gradient(135deg, var(--card-header-gradient-start) 0%, var(--card-header-gradient-end) 100%);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -399,7 +450,7 @@ summary:hover {
 
 .expand-close-btn:hover {
     opacity: 1;
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--hover-overlay);
 }
 
 .expand-close-btn:focus-visible {
@@ -410,7 +461,7 @@ summary:hover {
 .expand-iframe {
     border: none;
     width: 100%;
-    background: white;
+    background: var(--card-bg);
 }
 
 /* Expand dialog body - split layout */
@@ -488,6 +539,14 @@ summary:hover {
 .code-panel-content .hljs {
     background: transparent;
     padding: 1rem;
+}
+
+.theme-btn {
+    font-size: 1.1rem;
+    padding: 0.4rem 0.6rem;
+    min-width: 2.25rem;
+    text-align: center;
+    line-height: 1;
 }
 
 @media (max-width: 768px) {
