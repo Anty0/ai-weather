@@ -142,14 +142,16 @@ class ConnectionManager:
         }
 
     def make_visualization_message(self, model_name: str) -> Optional[Dict[str, Any]]:
-        html = self.state_service.current_visualizations.get(model_name)
+        raw_html = self.state_service.current_visualizations.get(model_name)
 
         # Clean up the AI output
-        if html is not None:
-            html = self.normalizer.normalize(html)
+        html = None
+        if raw_html is not None:
+            html = self.normalizer.normalize(raw_html)
 
         return {
             "type": "visualization_update",
             "model_name": model_name,
             "html": html,
+            "raw_html": raw_html,
         }

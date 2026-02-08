@@ -2,6 +2,8 @@ class GridManager {
     constructor(containerSelector) {
         this.container = document.querySelector(containerSelector);
         this.items = new Map();
+        this.rawHtmlMap = new Map();
+        this.normalizedHtmlMap = new Map();
     }
 
     setModels(models) {
@@ -10,6 +12,8 @@ class GridManager {
          */
         this.container.innerHTML = '';
         this.items.clear();
+        this.rawHtmlMap.clear();
+        this.normalizedHtmlMap.clear();
 
         for (const modelName of models) {
             const item = this.createGridItem(modelName, null);
@@ -18,7 +22,7 @@ class GridManager {
         }
     }
 
-    updateVisualization(modelName, html) {
+    updateVisualization(modelName, html, rawHtml) {
         /**
          * Update a specific model's visualization
          */
@@ -31,6 +35,10 @@ class GridManager {
         if (iframe) {
             iframe.srcdoc = html || this.getLoadingPlaceholderHtml();
         }
+        if (rawHtml != null) {
+            this.rawHtmlMap.set(modelName, rawHtml);
+        }
+        this.normalizedHtmlMap.set(modelName, html);
     }
 
     createGridItem(modelName, html) {
@@ -73,6 +81,14 @@ class GridManager {
         const item = this.items.get(modelName);
         const iframe = item.querySelector('iframe');
         return iframe ? iframe.srcdoc : null;
+    }
+
+    getNormalizedHtmlContent(modelName) {
+        return this.normalizedHtmlMap.get(modelName) || null;
+    }
+
+    getRawHtmlContent(modelName) {
+        return this.rawHtmlMap.get(modelName) || null;
     }
 
     getLoadingPlaceholderHtml() {

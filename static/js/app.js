@@ -37,7 +37,7 @@ ws.on('weather_data', (data) => {
 });
 
 ws.on('visualization_update', (data) => {
-    grid.updateVisualization(data.model_name, data.html);
+    grid.updateVisualization(data.model_name, data.html, data.raw_html);
     console.log('Visualization updated for', data.model_name);
 });
 
@@ -66,15 +66,68 @@ const expandDialog = document.getElementById('expand-dialog');
 const expandDialogTitle = expandDialog.querySelector('.expand-dialog-title');
 const expandDialogIframe = expandDialog.querySelector('.expand-iframe');
 const expandCloseBtn = expandDialog.querySelector('.expand-close-btn');
+const codeDisplay = expandDialog.querySelector('.code-display');
+const codeTabs = expandDialog.querySelectorAll('.code-tab');
+
+// Code panel state
+let expandedModelName = null;
+let activeTab = 'normalized';
+let highlightedContent = { normalized: null, raw: null };
+
+function updateCodePanel() {
+    let sourceHtml;
+    if (activeTab === 'normalized') {
+        sourceHtml = grid.getVisualizationContent(expandedModelName);
+    } else {
+        sourceHtml = grid.getRawHtmlContent(expandedModelName);
+    }
+
+    if (!sourceHtml) {
+        codeDisplay.textContent = '(No content available)';
+        codeDisplay.removeAttribute('data-highlighted');
+        return;
+    }
+
+    if (highlightedContent[activeTab] === sourceHtml) {
+        return;
+    }
+
+    codeDisplay.textContent = sourceHtml;
+    codeDisplay.removeAttribute('data-highlighted');
+    codeDisplay.className = 'code-display language-html';
+    hljs.highlightElement(codeDisplay);
+    highlightedContent[activeTab] = sourceHtml;
+}
 
 function openExpandedView(modelName) {
     const content = grid.getVisualizationContent(modelName);
-    if (content) {
-        expandDialogTitle.textContent = modelName;
-        expandDialogIframe.srcdoc = content;
-        expandDialog.showModal();
-    }
+    if (!content) return;
+
+    expandedModelName = modelName;
+    expandDialogTitle.textContent = modelName;
+    expandDialogIframe.srcdoc = content;
+
+    highlightedContent = { normalized: null, raw: null };
+    activeTab = 'normalized';
+    codeTabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === 'normalized');
+    });
+    updateCodePanel();
+
+    expandDialog.showModal();
 }
+
+// Tab switching
+codeTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        if (tab.dataset.tab === activeTab) return;
+        activeTab = tab.dataset.tab;
+        codeTabs.forEach(t => {
+            t.classList.toggle('active', t.dataset.tab === activeTab);
+        });
+        updateCodePanel();
+    });
+});
 
 // Event delegation for grid item expansion
 document.getElementById('grid-container').addEventListener('click', (e) => {
@@ -101,9 +154,13 @@ expandDialog.addEventListener('click', (e) => {
     }
 });
 
-// Clean up iframe when dialog closes
+// Clean up iframe and code panel when dialog closes
 expandDialog.addEventListener('close', () => {
     expandDialogIframe.srcdoc = '';
+    codeDisplay.textContent = '';
+    codeDisplay.removeAttribute('data-highlighted');
+    expandedModelName = null;
+    highlightedContent = { normalized: null, raw: null };
 });
 
 // Helper functions

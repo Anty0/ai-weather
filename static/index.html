@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Weather - Not in the way you think</title>
     <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/atom-one-dark.min.css">
 </head>
 <body>
     <header>
@@ -64,10 +65,23 @@
                 <span class="expand-dialog-title"></span>
                 <button class="expand-close-btn" aria-label="Close">&times;</button>
             </div>
-            <iframe class="expand-iframe"></iframe>
+            <div class="expand-dialog-body">
+                <iframe class="expand-iframe"></iframe>
+                <div class="code-panel">
+                    <div class="code-panel-tabs">
+                        <button class="code-tab active" data-tab="normalized">Normalized</button>
+                        <button class="code-tab" data-tab="raw">Raw</button>
+                    </div>
+                    <div class="code-panel-content">
+                        <pre><code class="code-display language-html"></code></pre>
+                    </div>
+                </div>
+            </div>
         </div>
     </dialog>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/xml.min.js"></script>
     <script src="/static/js/websocket.js"></script>
     <script src="/static/js/grid.js"></script>
     <script src="/static/js/app.js"></script>
