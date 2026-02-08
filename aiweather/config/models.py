@@ -29,6 +29,12 @@ class AIModelConfig(BaseModel):
     enabled: bool = Field(default=True, description="Enable/disable this model")
 
 
+class AIConfig(BaseModel):
+    """General AI generation configuration."""
+
+    max_concurrent: int = Field(default=0, ge=0, description="Max models to run concurrently. 0 = no limit.")
+
+
 class OllamaConfig(BaseModel):
     """Ollama-specific configuration."""
 
@@ -71,6 +77,7 @@ class Settings(BaseSettings):
 
     weather: WeatherConfig
     ai_models: List[AIModelConfig] = Field(default_factory=list)
+    ai: AIConfig = Field(default_factory=AIConfig)
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     prompt: PromptConfig
     scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)

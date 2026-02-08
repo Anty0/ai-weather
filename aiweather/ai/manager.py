@@ -113,13 +113,22 @@ class AIManager:
 
                 return model_name, html
 
-        # Execute all in parallel
-        tasks = [
-            generate_with_callback(model_config.name, model_config)
-            for model_config in self.settings.ai_models
-            if model_config.enabled
-        ]
+        generate_fn: Callable[[str, AIModelConfig], Awaitable[tuple[str, str]]]
 
+        max_concurrent = self.settings.ai.max_concurrent
+        if max_concurrent > 0:
+            # Limit concurrent requests
+            semaphore = asyncio.Semaphore(max_concurrent)
+
+            async def generate_limited(name: str, cfg: AIModelConfig) -> tuple[str, str]:
+                async with semaphore:
+                    return await generate_with_callback(name, cfg)
+
+            generate_fn = generate_limited
+        else:
+            generate_fn = generate_with_callback
+
+        tasks = [generate_fn(m.name, m) for m in self.settings.ai_models if m.enabled]
         results = await asyncio.gather(*tasks)
 
         # Return as dict

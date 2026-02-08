@@ -2,6 +2,7 @@
 
 from .loader import load_settings
 from .models import (
+    AIConfig,
     AIModelConfig,
     OllamaConfig,
     PromptConfig,
@@ -12,6 +13,7 @@ from .models import (
 )
 
 __all__ = [
+    "AIConfig",
     "AIModelConfig",
     "OllamaConfig",
     "PromptConfig",
