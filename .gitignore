@@ -62,3 +62,6 @@ dmypy.json
 
 # Ruff
 .ruff_cache/
+
+# Claude
+/CLAUDE.local.md
