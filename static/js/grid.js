@@ -71,18 +71,6 @@ class GridManager {
         return item;
     }
 
-    getVisualizationContent(modelName) {
-        /**
-         * Get the current srcdoc content for a model's visualization
-         */
-        if (!this.items.has(modelName)) {
-            return null;
-        }
-        const item = this.items.get(modelName);
-        const iframe = item.querySelector('iframe');
-        return iframe ? iframe.srcdoc : null;
-    }
-
     getNormalizedHtmlContent(modelName) {
         return this.normalizedHtmlMap.get(modelName) || null;
     }

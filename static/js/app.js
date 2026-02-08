@@ -77,7 +77,7 @@ let highlightedContent = { normalized: null, raw: null };
 function updateCodePanel() {
     let sourceHtml;
     if (activeTab === 'normalized') {
-        sourceHtml = grid.getVisualizationContent(expandedModelName);
+        sourceHtml = grid.getNormalizedHtmlContent(expandedModelName);
     } else {
         sourceHtml = grid.getRawHtmlContent(expandedModelName);
     }
@@ -100,7 +100,7 @@ function updateCodePanel() {
 }
 
 function openExpandedView(modelName) {
-    const content = grid.getVisualizationContent(modelName);
+    const content = grid.getNormalizedHtmlContent(modelName);
     if (!content) return;
 
     expandedModelName = modelName;
