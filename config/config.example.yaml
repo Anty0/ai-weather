@@ -33,6 +33,7 @@ ai_models:
 ollama:
   base_url: http://localhost:11434
   timeout: 120
+  keep_alive: "0"                   # How long to keep model in memory (e.g. "5m", "1h", "0" to unload)
 
 prompt:
   template: |

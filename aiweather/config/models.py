@@ -34,6 +34,9 @@ class OllamaConfig(BaseModel):
 
     base_url: str = Field(default="http://localhost:11434", description="Ollama API URL")
     timeout: int = Field(default=1200, description="Request timeout in seconds")
+    keep_alive: str = Field(
+        default="0", description="How long to keep model in memory (e.g. '5m', '1h', '0' to unload immediately)"
+    )
 
 
 class PromptConfig(BaseModel):

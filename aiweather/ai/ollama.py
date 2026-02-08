@@ -51,7 +51,7 @@ class OllamaProvider(AIProvider):
                 prompt=prompt,
                 options={"temperature": kwargs.get("temperature", 0.7)},
                 stream=True,
-                keep_alive="2h",
+                keep_alive=self.config.keep_alive,
             )
 
             accumulated = ""

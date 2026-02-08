@@ -4,7 +4,12 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ## Development Commands
 
+**Important:** Always activate the virtual environment before running any commands:
+
 ```bash
+# Activate virtual environment (required for all commands below)
+source .venv/bin/activate
+
 # Install dependencies
 pip install -r requirements.txt -r requirements-dev.txt
 
