@@ -1,5 +1,5 @@
 ---
-allowed-tools: Bash(git tag:*), Bash(git push:*), Bash(git add:*), Bash(git commit:*), Bash(gh release create:*), Bash(gh run:*), Bash(gh run list:*), Bash(gh run watch:*), Edit, Read
+allowed-tools: Bash(grep:*), Bash(git describe:*), Bash(git branch:*), Bash(git log:*), Bash(git diff:*), Bash(git status:*), Bash(git tag:*), Bash(git add:*), Bash(git commit:*), Bash(git reset:*), Bash(gh repo view:*), Bash(gh run:*), Bash(gh run list:*), Bash(gh run watch:*), Bash(gh run rerun:*), Bash(gh release delete:*), Edit, Read
 description: Release a new version - bump version, commit, tag, push, create GitHub release
 argument-hint: "[major|minor|patch]"
 ---
@@ -10,7 +10,6 @@ argument-hint: "[major|minor|patch]"
 
 - Current version in pyproject.toml: !`grep '^version' pyproject.toml`
 - Latest git tag: !`git describe --tags --abbrev=0`
-- Commits since last tag: !`git log $(git describe --tags --abbrev=0)..HEAD --oneline`
 - Current branch: !`git branch --show-current`
 - GitHub repo: !`gh repo view --json nameWithOwner -q .nameWithOwner`
 
