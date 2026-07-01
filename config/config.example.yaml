@@ -56,8 +56,8 @@ prompt:
     Return ONLY the HTML code, no explanations.
 
 scheduler:
-  timezone: UTC
-  refresh_minute: 0  # Refresh at minute 0 of every hour
+  timezone: UTC       # Drives both the refresh schedule and the wall-clock hour shown in the UI; set to your local zone
+  refresh_minute: 0   # Refresh at minute 0 of every hour
 
 storage:
   data_dir: data

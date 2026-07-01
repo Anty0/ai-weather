@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import List, Type, Tuple
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict, PydanticBaseSettingsSource, YamlConfigSettingsSource
@@ -33,6 +32,12 @@ class AIConfig(BaseModel):
     """General AI generation configuration."""
 
     max_concurrent: int = Field(default=0, ge=0, description="Max models to run concurrently. 0 = no limit.")
+    progress_interval_seconds: float = Field(
+        default=5, ge=0, description="Min seconds between progressive updates per model. 0 = every chunk."
+    )
+    readiness_probe_timeout_seconds: float = Field(
+        default=3, gt=0, description="Timeout in seconds for the provider availability probe (startup log and /ready)."
+    )
 
 
 class OllamaConfig(BaseModel):
@@ -54,6 +59,11 @@ class PromptConfig(BaseModel):
     @classmethod
     def validate_placeholder(cls, v: str) -> str:
         """Validate that template contains the required placeholder."""
+        if "{{weather_json}}" in v:
+            raise ValueError(
+                "Prompt template must use the single-brace {weather_json} placeholder, "
+                "not the doubled {{weather_json}} form"
+            )
         if "{weather_json}" not in v:
             raise ValueError("Prompt template must contain {weather_json} placeholder")
         return v
@@ -76,7 +86,7 @@ class Settings(BaseSettings):
     """Main application settings."""
 
     weather: WeatherConfig
-    ai_models: List[AIModelConfig] = Field(default_factory=list)
+    ai_models: list[AIModelConfig] = Field(default_factory=list)
     ai: AIConfig = Field(default_factory=AIConfig)
     ollama: OllamaConfig = Field(default_factory=OllamaConfig)
     prompt: PromptConfig
@@ -94,12 +104,12 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: Type[BaseSettings],
+        settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
-    ) -> Tuple[PydanticBaseSettingsSource, ...]:
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
         return (
             init_settings,  # args or defaults
             env_settings,  # environment variables
@@ -108,5 +118,5 @@ class Settings(BaseSettings):
             file_secret_settings,
         )
 
-    def get_enabled_ai_model_names(self) -> List[str]:
+    def get_enabled_ai_model_names(self) -> list[str]:
         return [model.name for model in self.ai_models if model.enabled]

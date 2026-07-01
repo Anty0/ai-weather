@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import aiofiles
 import structlog
@@ -41,7 +41,7 @@ class ArchiveManager:
         safe_name = model_name.replace(" ", "_").replace("/", "_")
         return f"{safe_name}.html"
 
-    def find_latest_dir(self) -> Optional[Path]:
+    def find_latest_dir(self) -> Path | None:
         """Find the most recent hourly directory."""
         latest_year_month = max((d for d in self.base_dir.iterdir() if d.is_dir()), key=lambda p: p.name, default=None)
         if not latest_year_month:
@@ -63,7 +63,7 @@ class ArchiveManager:
     async def save_metadata(
         self,
         timestamp: datetime,
-        models: List[str],
+        models: list[str],
         prompt: str,
     ) -> Path:
         """Save metadata.
@@ -141,7 +141,7 @@ class ArchiveManager:
 
         logger.info("visualization_saved", timestamp=timestamp.isoformat(), model=model_name)
 
-    async def load_latest(self, models: List[str]) -> Optional[Dict[str, Any]]:
+    async def load_latest(self, models: list[str]) -> dict[str, Any] | None:
         """Load the most recent hour's data.
 
         Args:
@@ -160,7 +160,7 @@ class ArchiveManager:
 
         return await self._load_hour_data(latest_dir, models)
 
-    async def load_hour(self, timestamp: datetime, models: List[str]) -> Optional[Dict[str, Any]]:
+    async def load_hour(self, timestamp: datetime, models: list[str]) -> dict[str, Any] | None:
         """Load data for a specific hour.
 
         Args:
@@ -176,7 +176,7 @@ class ArchiveManager:
 
         return await self._load_hour_data(hour_dir, models)
 
-    async def get_missing_models(self, timestamp: datetime, models: List[str]) -> List[str]:
+    async def get_missing_models(self, timestamp: datetime, models: list[str]) -> list[str]:
         """Get a list of models that haven't completed for this hour.
 
         Useful for resuming after restart.
@@ -188,20 +188,22 @@ class ArchiveManager:
         Returns:
             List of model names that are expected but missing
         """
+        return self._missing_models(self.get_hourly_dir(timestamp), models)
 
-        hour_dir = self.get_hourly_dir(timestamp)
+    def _missing_models(self, hour_dir: Path, models: list[str]) -> list[str]:
+        """Return the models that have no saved visualization file in this hour."""
         return [model for model in models if not (hour_dir / self.get_model_filename(model)).exists()]
 
-    async def _load_hour_data(self, hour_dir: Path, models: List[str]) -> Dict[str, Any]:
+    async def _load_hour_data(self, hour_dir: Path, models: list[str]) -> dict[str, Any]:
         """Load data from a specific hour directory.
 
         Args:
             hour_dir: Path to hour directory
+            models: Model names to load visualizations for
 
         Returns:
             Dictionary with timestamp, weather, and visualizations
         """
-        # Load weather data
         weather_path = hour_dir / "weather.json"
         weather_data = None
         if weather_path.exists():
@@ -215,18 +217,14 @@ class ArchiveManager:
                 metadata = json.loads(await f.read())
 
         visualizations = {}
-        missing_models = []
         for model_name in models:
             model_path = hour_dir / self.get_model_filename(model_name)
             if model_path.exists():
                 async with aiofiles.open(model_path, "r") as f:
                     visualizations[model_name] = await f.read()
-            else:
-                missing_models.append(model_name)
 
         return {
             "timestamp": metadata.get("timestamp", hour_dir.name),
             "weather": weather_data,
             "visualizations": visualizations,
-            "missing_visualizations": missing_models,
         }

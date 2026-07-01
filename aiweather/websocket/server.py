@@ -1,11 +1,12 @@
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
 
 import structlog
 from fastapi import WebSocket, WebSocketDisconnect
 
-from ..ai.normalizer import HtmlNormalizer
 from ..config import Settings
 from ..state import StateService
+from ..visualization import VisualizationStatus
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
@@ -22,8 +23,7 @@ class ConnectionManager:
         """
         self.settings = settings
         self.state_service = state_service
-        self.normalizer = HtmlNormalizer()
-        self.active_connections: List[WebSocket] = []
+        self.active_connections: list[WebSocket] = []
 
     async def handle(self, websocket: WebSocket) -> None:
         """Handle the WebSocket connection lifecycle."""
@@ -71,7 +71,7 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
         logger.info("client_disconnected", total=len(self.active_connections))
 
-    async def send_to_client(self, message: Optional[Dict[str, Any]], websocket: WebSocket) -> None:
+    async def send_to_client(self, message: dict[str, Any] | None, websocket: WebSocket) -> None:
         """Send a message to a specific client.
 
         Args:
@@ -88,7 +88,7 @@ class ConnectionManager:
             logger.warning("send_failed", error=str(e))
             self.disconnect(websocket)
 
-    async def broadcast(self, message: Optional[Dict[str, Any]]) -> None:
+    async def broadcast(self, message: dict[str, Any] | None) -> None:
         """Broadcast a message to all connected clients.
 
         Args:
@@ -124,37 +124,42 @@ class ConnectionManager:
         """
         await self.broadcast(self.make_visualization_message(model_name))
 
-    def make_config_info_message(self) -> Dict[str, Any]:
+    def make_config_info_message(self) -> dict[str, Any]:
         return {
             "type": "config_info",
             "prompt_template": self.settings.prompt.template,
             "models": self.settings.get_enabled_ai_model_names(),
         }
 
-    def make_weather_message(self) -> Optional[Dict[str, Any]]:
+    def make_weather_message(self) -> dict[str, Any] | None:
         if self.state_service.current_weather is None:
             return None
 
         return {
             "type": "weather_data",
-            "timestamp": self.state_service.current_timestamp,
+            "timestamp": self._wire_timestamp(self.state_service.current_timestamp),
             "weather": self.state_service.current_weather,
         }
 
-    def make_visualization_message(self, model_name: str) -> Optional[Dict[str, Any]]:
-        raw_html = self.state_service.current_visualizations.get(model_name)
+    @staticmethod
+    def _wire_timestamp(timestamp: str | None) -> str | None:
+        """Emit the timestamp as offset-free local wall clock so the frontend renders
+        the configured-tz hour identically for every viewer regardless of browser tz."""
+        if timestamp is None:
+            return None
+        try:
+            return datetime.fromisoformat(timestamp).replace(tzinfo=None).isoformat()
+        except ValueError:
+            return timestamp
 
-        # Clean up the AI output
-        html = None
-        if raw_html is not None:
-            html = self.normalizer.normalize(raw_html)
-
-        status = self.state_service.visualization_status.get(model_name, "up_to_date")
+    def make_visualization_message(self, model_name: str) -> dict[str, Any]:
+        visualization = self.state_service.current_visualizations.get(model_name)
+        status = self.state_service.visualization_status.get(model_name, VisualizationStatus.UP_TO_DATE)
 
         return {
             "type": "visualization_update",
             "model_name": model_name,
-            "html": html,
-            "raw_html": raw_html,
-            "status": status,
+            "html": visualization.normalized if visualization is not None else None,
+            "raw_html": visualization.raw if visualization is not None else None,
+            "status": status.value,
         }
