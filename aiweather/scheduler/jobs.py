@@ -1,55 +1,36 @@
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 
-from ..ai import AIManager
 from ..config import Settings
-from ..state import StateService
-from ..storage import ArchiveManager
-from ..weather import WeatherClient
-from ..websocket import ConnectionManager
+from .refresh import RefreshService
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 
 class WeatherScheduler:
-    """Manages scheduled weather fetching and AI generation."""
+    """Owns the APScheduler triggers and delegates the work to RefreshService."""
 
-    def __init__(
-        self,
-        settings: Settings,
-        archive: ArchiveManager,
-        state_service: StateService,
-        ws_manager: ConnectionManager,
-    ) -> None:
+    def __init__(self, settings: Settings, refresh_service: RefreshService) -> None:
         """Initialize scheduler.
 
         Args:
             settings: Application settings
-            archive: Archive manager
-            state_service: State service for managing current state
-            ws_manager: WebSocket connection manager
+            refresh_service: Service that performs the actual refresh cycle
         """
         self.settings = settings
-        self.archive = archive
-        self.state_service = state_service
-        self.ws_manager = ws_manager
-
+        self.refresh_service = refresh_service
         self.scheduler = AsyncIOScheduler(timezone=settings.scheduler.timezone)
-        self.weather_client = WeatherClient(settings.weather)
-        self.ai_manager = AIManager(settings)
 
     async def start(self) -> None:
-        """Start the scheduler."""
+        """Start the scheduler, kicking off an immediate refresh when cached data is stale."""
         tz = ZoneInfo(self.settings.scheduler.timezone)
 
-        # Schedule hourly refresh
         job = self.scheduler.add_job(
-            self.try_refresh_weather,
+            self.refresh_service.try_refresh_weather,
             CronTrigger(
                 minute=self.settings.scheduler.refresh_minute,
                 timezone=tz,
@@ -59,8 +40,7 @@ class WeatherScheduler:
             replace_existing=True,
         )
 
-        if await self.needs_refresh():
-            # Initiate refresh immediately if needed
+        if await self.refresh_service.needs_refresh():
             logger.info("refresh_immediately")
             job.modify(next_run_time=datetime.now(tz))
 
@@ -68,76 +48,7 @@ class WeatherScheduler:
         logger.info("scheduler_started")
         logger.info("scheduler_jobs", jobs=[job.next_run_time for job in self.scheduler.get_jobs()])
 
-    async def try_refresh_weather(self) -> None:
-        """Fetch weather and generate visualizations with progressive updates."""
-        try:
-            await self.refresh_weather()
-        except Exception as e:
-            logger.error("refresh_failed", error=str(e))
-
-    async def refresh_weather(self) -> None:
-        """Fetch weather and generate visualizations with progressive updates."""
-        timestamp = datetime.now().replace(minute=0, second=0, microsecond=0)
-        logger.info("refresh_started", timestamp=timestamp.isoformat())
-
-        weather_json: str = await self.weather_client.get_current_weather()
-
-        models = self.settings.get_enabled_ai_model_names()
-        await self.archive.save_metadata(timestamp, models, self.settings.prompt.template)
-        await self.archive.save_weather(timestamp, weather_json)
-
-        # Update state and broadcast weather data
-        weather_dict = json.loads(weather_json)
-        self.state_service.update_timestamp(timestamp.isoformat())
-        self.state_service.update_weather(weather_dict)
-        self.state_service.mark_all_outdated()
-        await self.ws_manager.broadcast_weather()
-
-        for model_name in models:
-            await self.ws_manager.broadcast_visualization(model_name)
-
-        # Define callback for progressive updates
-        async def on_visualization_update(model_name: str, html: str, is_complete: bool) -> None:
-            """Called on each progressive update and on completion."""
-            await self.archive.save_visualization(timestamp, model_name, html)
-            self.state_service.update_visualization(model_name, html)
-            if is_complete:
-                self.state_service.mark_up_to_date(model_name)
-            else:
-                self.state_service.mark_generating(model_name)
-            await self.ws_manager.broadcast_visualization(model_name)
-
-        # Generate visualizations with streaming updates
-        visualizations = await self.ai_manager.generate_all(
-            weather_json,
-            on_update=on_visualization_update,
-        )
-
-        logger.info("refresh_complete", models=len(visualizations))
-
     async def stop(self) -> None:
         """Stop the scheduler."""
         self.scheduler.shutdown()
         logger.info("scheduler_stopped")
-
-    async def needs_refresh(self) -> bool:
-        timestamp_str = self.state_service.current_timestamp
-        if timestamp_str is None:
-            logger.info("no_cached_data_found")
-            return True
-
-        timestamp = datetime.fromisoformat(timestamp_str)
-        age = datetime.now(timestamp.tzinfo) - timestamp
-
-        logger.info("cached_data_age", age_hours=age.total_seconds() / 3600)
-        if age > timedelta(hours=1):
-            logger.info("cached_data_too_old")
-            return True
-
-        missing_models = await self.archive.get_missing_models(timestamp, self.settings.get_enabled_ai_model_names())
-
-        if len(missing_models) > 0:
-            logger.info("cached_data_missing_models", models=missing_models)
-            return True
-
-        return False

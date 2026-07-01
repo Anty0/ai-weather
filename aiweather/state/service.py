@@ -1,101 +1,60 @@
 """Simple state service for holding current weather data and visualizations."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import structlog
 
-from ..config import Settings
-from ..storage import ArchiveManager
+from ..visualization import Visualization, VisualizationStatus
 
 logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
 
 class StateService:
-    """Holds current weather state and provides simple update/read interface.
+    """Holds current weather state and provides a simple update/read interface.
 
-    This is a passive data holder - it doesn't broadcast or notify.
+    This is a passive data holder - it doesn't broadcast, notify, or load from disk.
     Other components update it and read from it directly.
     """
 
-    def __init__(self, archive: ArchiveManager, settings: Settings) -> None:
-        """Initialize state service.
+    def __init__(self) -> None:
+        self.current_weather: dict[str, Any] | None = None
+        self.current_visualizations: dict[str, Visualization] = {}
+        self.current_timestamp: str | None = None
+        self.visualization_status: dict[str, VisualizationStatus] = {}
 
-        Args:
-            archive: Archive manager for loading initial state
-            settings: Application settings for enabled models
-        """
-        self.archive = archive
-        self.settings = settings
+    def install_initial_state(
+        self,
+        timestamp: str | None,
+        weather: dict[str, Any] | None,
+        visualizations: dict[str, Visualization],
+    ) -> None:
+        """Replace state wholesale with data loaded from the archive.
 
-        # State
-        self.current_weather: Optional[Dict[str, Any]] = None
-        self.current_visualizations: Dict[str, str] = {}
-        self.current_timestamp: Optional[str] = None
-        self.visualization_status: Dict[str, str] = {}
-
-    async def load_from_archive(self) -> bool:
-        """Load the latest data from the archive into state.
-
-        Called on startup to initialize state from disk.
-
-        Returns:
-            True if data was loaded, False if no archive data exists
-        """
-        latest = await self.archive.load_latest(self.settings.get_enabled_ai_model_names())
-
-        if not latest:
-            logger.info("no_archive_data", action="starting_with_empty_state")
-            return False
-
-        self.current_timestamp = latest["timestamp"]
-        self.current_weather = latest.get("weather")
-        self.current_visualizations = latest.get("visualizations", {})
-        self.visualization_status = {name: "up_to_date" for name in self.current_visualizations}
-
-        logger.info(
-            "state_loaded_from_archive",
-            timestamp=self.current_timestamp,
-            has_weather=bool(self.current_weather),
-            viz_count=len(self.current_visualizations),
-        )
-        return True
-
-    def update_timestamp(self, timestamp: str) -> None:
-        """Update current timestamp.
-
-        Args:
-            timestamp: ISO format timestamp string
+        Seeds both the visualization map and its parallel status map.
         """
         self.current_timestamp = timestamp
+        self.current_weather = weather
+        self.current_visualizations = dict(visualizations)
+        self.visualization_status = {name: VisualizationStatus.UP_TO_DATE for name in visualizations}
 
-    def update_weather(self, weather: Dict[str, Any]) -> None:
-        """Update current weather data.
+    def update_timestamp(self, timestamp: str) -> None:
+        self.current_timestamp = timestamp
 
-        Args:
-            weather: Weather data dictionary
-        """
+    def update_weather(self, weather: dict[str, Any]) -> None:
         self.current_weather = weather
         logger.debug("state_weather_updated", weather=weather)
 
-    def update_visualization(self, model_name: str, html: str) -> None:
-        """Update a visualization.
-
-        Args:
-            model_name: Name of the AI model
-            html: Generated HTML content
-        """
-        self.current_visualizations[model_name] = html
+    def update_visualization(self, model_name: str, visualization: Visualization) -> None:
+        self.current_visualizations[model_name] = visualization
         logger.debug("state_viz_updated", model=model_name)
 
     def mark_all_outdated(self) -> None:
-        """Mark all visualizations as outdated."""
-        for name in self.visualization_status:
-            self.visualization_status[name] = "outdated"
+        """Mark every current visualization as outdated."""
+        for name in self.current_visualizations:
+            self.visualization_status[name] = VisualizationStatus.OUTDATED
 
     def mark_generating(self, model_name: str) -> None:
-        """Mark a visualization as currently generating."""
-        self.visualization_status[model_name] = "generating"
+        self.visualization_status[model_name] = VisualizationStatus.GENERATING
 
     def mark_up_to_date(self, model_name: str) -> None:
-        """Mark a visualization as up to date."""
-        self.visualization_status[model_name] = "up_to_date"
+        self.visualization_status[model_name] = VisualizationStatus.UP_TO_DATE

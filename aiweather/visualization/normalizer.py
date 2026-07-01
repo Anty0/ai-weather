@@ -1,4 +1,4 @@
-"""Normalizes HTML output from AIs."""
+"""HTML normalization for AI Weather."""
 
 from abc import ABC, abstractmethod
 
@@ -6,6 +6,23 @@ from abc import ABC, abstractmethod
 class Strategy(ABC):
     @abstractmethod
     def normalize(self, html: str) -> str | None: ...
+
+
+class HtmlNormalizer:
+    def __init__(self) -> None:
+        self.strategies = [
+            FindDoctypeNormalizer(),
+            FindHtmlNormalizer(),
+            CodeBlockHtmlNormalizer(),
+            NoopNormalizer(),
+        ]
+
+    def normalize(self, html: str) -> str:
+        for strategy in self.strategies:
+            result = strategy.normalize(html)
+            if result is not None:
+                return result
+        return html
 
 
 class FindDoctypeNormalizer(Strategy):
@@ -38,46 +55,27 @@ class FindHtmlNormalizer(Strategy):
 
 
 class CodeBlockHtmlNormalizer(Strategy):
+    def normalize(self, html: str) -> str | None:
+        lines = html.splitlines()
+
+        block_start = self.find(lines, "```")
+        if block_start is None:
+            return None
+
+        rel_end = self.find(lines[block_start + 1 :], "```")
+        if rel_end is None:
+            return None
+
+        block_end = block_start + 1 + rel_end
+        return "\n".join(lines[block_start + 1 : block_end])
+
     def find(self, lines: list[str], start: str) -> int | None:
         for i, line in enumerate(lines):
             if line.strip().startswith(start):
                 return i
         return None
 
-    def normalize(self, html: str) -> str | None:
-        lines = html.splitlines()
-
-        if len(lines) < 3:
-            return None
-
-        block_start = self.find(lines, "```")
-        if block_start is None:
-            return None
-
-        block_end = self.find(lines[block_start:], "```")
-        if block_end is None:
-            return None
-
-        return "\n".join(lines[block_start : block_start + block_end + 1])
-
 
 class NoopNormalizer(Strategy):
     def normalize(self, html: str) -> str | None:
-        return html
-
-
-class HtmlNormalizer:
-    def __init__(self) -> None:
-        self.strategies = [
-            FindDoctypeNormalizer(),
-            FindHtmlNormalizer(),
-            CodeBlockHtmlNormalizer(),
-            NoopNormalizer(),
-        ]
-
-    def normalize(self, html: str) -> str:
-        for strategy in self.strategies:
-            result = strategy.normalize(html)
-            if result is not None:
-                return result
         return html

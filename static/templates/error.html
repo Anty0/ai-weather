@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body {{
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             display: flex;
             align-items: center;
@@ -12,28 +12,28 @@
             height: 100vh;
             margin: 0;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }}
-        .error {{
+        }
+        .error {
             text-align: center;
             padding: 3rem;
             background: white;
             border-radius: 16px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             max-width: 400px;
-        }}
-        h2 {{
+        }
+        h2 {
             color: #333;
             margin: 0 0 1rem 0;
-        }}
-        .error-icon {{
+        }
+        .error-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
-        }}
-        p {{
+        }
+        p {
             color: #666;
             margin: 0.5rem 0;
-        }}
-        .error-details {{
+        }
+        .error-details {
             color: #e74c3c;
             font-size: 0.875rem;
             margin-top: 1rem;
@@ -41,15 +41,15 @@
             background: #fee;
             border-radius: 8px;
             word-break: break-word;
-        }}
+        }
     </style>
 </head>
 <body>
     <div class="error">
         <div class="error-icon">⚠️</div>
-        <h2>{model_name}</h2>
+        <h2>$model_name</h2>
         <p>Generation failed</p>
-        <div class="error-details">{error}</div>
+        <div class="error-details">$error</div>
     </div>
 </body>
 </html>
